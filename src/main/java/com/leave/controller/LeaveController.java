@@ -68,6 +68,7 @@ public class LeaveController {
         leaveService.deleteLeave();
         return "deleteSuccess";
     }
+
     @RequestMapping("/downLeave")
     public ResponseEntity<byte[]> download() throws IOException {
         leaveService.leaveOutPut(leaveService.queryAll(),"LeaveName.xlsx");
