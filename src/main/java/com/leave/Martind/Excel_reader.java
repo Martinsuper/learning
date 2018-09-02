@@ -1,115 +1,143 @@
 package com.leave.Martind;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Properties;
 
 import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import java.io.*;
+import java.util.ArrayList;
+
+import static org.apache.poi.ss.usermodel.Cell.*;
+
 public class Excel_reader {
 
-    //*************xlsx文件读取函数************************
-    //excel_name为文件名，arg为需要查询的列号
-    //返回二维字符串数组
-//    @SuppressWarnings({ "resource", "unused" })
-    public ArrayList<ArrayList<String>> xlsx_reader(String excel_url,int ... args) throws IOException {
-
-        //读取xlsx文件
-        XSSFWorkbook xssfWorkbook = null;
-        //寻找目录读取文件
-        File excelFile = new File(excel_url);
-        InputStream is = new FileInputStream(excelFile);
-        xssfWorkbook = new XSSFWorkbook(is);
-
-        if(xssfWorkbook==null){
-            System.out.println("未读取到内容,请检查路径！");
+    public ArrayList<ArrayList<String>> reader(String path) throws IOException {
+        File file = new File(path);
+        String fileName = file.getName();
+        String suffix = fileName.substring(fileName.lastIndexOf(".")+1);
+//        System.out.println();
+        if(suffix.equals("xls")){
+            return xls_reader(path);
+        }else if(suffix.equals("xlsx")){
+           return xlsx_reader(path);
+        }else {
+            System.out.println("error");
             return null;
         }
 
-        ArrayList<ArrayList<String>> ans=new ArrayList<ArrayList<String>>();
-        //遍历xlsx中的sheet
-        for (int numSheet = 0; numSheet < xssfWorkbook.getNumberOfSheets(); numSheet++) {
-            XSSFSheet xssfSheet = xssfWorkbook.getSheetAt(numSheet);
-            if (xssfSheet == null) {
-                continue;
-            }
-            // 对于每个sheet，读取其中的每一行
-            for (int rowNum = 0; rowNum <= xssfSheet.getLastRowNum(); rowNum++) {
-                XSSFRow xssfRow = xssfSheet.getRow(rowNum);
-                if (xssfRow == null) continue;
-                ArrayList<String> curarr=new ArrayList<String>();
-                for(int columnNum = 0 ; columnNum<args.length ; columnNum++){
-                    XSSFCell cell = xssfRow.getCell(args[columnNum]);
+    }
 
-                    curarr.add( Trim_str( getValue(cell) ) );
+    private ArrayList<ArrayList<String>> xls_reader(String xls_path) throws IOException {
+        InputStream inputStream = new FileInputStream(new File(xls_path));
+        HSSFWorkbook hssfWorkbook = new HSSFWorkbook(inputStream);
+        HSSFSheet hssfSheet = null;
+        ArrayList<ArrayList<String>> arrayLists = new ArrayList<>();
+        for (int i = 0; i < hssfWorkbook.getNumberOfSheets(); i++) {
+            hssfSheet = hssfWorkbook.getSheetAt(i);
+            for (int j = 0; j < hssfSheet.getLastRowNum() + 1; j++) {
+                ArrayList<String> arrayList = new ArrayList<>();
+                HSSFRow row = hssfSheet.getRow(j);
+                if (row != null) {
+                    for (int k = 0; k < row.getLastCellNum(); k++) {
+//                        System.out.println(row.getCell(k));
+                        arrayList.add(getValue(row.getCell(k)));
+                    }
                 }
-                ans.add(curarr);
+                arrayLists.add(arrayList);
+            }
+
+        }
+        return arrayLists;
+    }
+
+    private ArrayList<ArrayList<String>> xlsx_reader(String xlsx_path) throws IOException {
+        InputStream inputStream = new FileInputStream(new File(xlsx_path));
+        XSSFWorkbook xssfWorkbook = new XSSFWorkbook(inputStream);
+        XSSFSheet xssfSheet = null;
+        ArrayList<ArrayList<String>> arrayLists = new ArrayList<>();
+        for (int i = 0; i < xssfWorkbook.getNumberOfSheets();i++){
+            xssfSheet = xssfWorkbook.getSheetAt(i);
+            for (int j=0; j< xssfSheet.getLastRowNum()+1;j++){
+                ArrayList<String> arrayList = new ArrayList<>();
+                XSSFRow row = xssfSheet.getRow(j);
+                if(row!=null){
+                    for(int k =0;k<row.getLastCellNum();k++){
+                        arrayList.add(getValue(row.getCell(k)));
+                    }
+                }
+                arrayLists.add(arrayList);
             }
         }
-        return ans;
+        return arrayLists;
     }
 
-    //判断后缀为xlsx的excel文件的数据类
-//    @SuppressWarnings("deprecation")
-    private static String getValue(XSSFCell xssfRow) {
-        if(xssfRow==null){
-            return "---";
-        }
-        if (xssfRow.getCellType() == xssfRow.CELL_TYPE_BOOLEAN) {
-            return String.valueOf(xssfRow.getBooleanCellValue());
-        } else if (xssfRow.getCellType() == xssfRow.CELL_TYPE_NUMERIC) {
-            double cur=xssfRow.getNumericCellValue();
-            long longVal = Math.round(cur);
-            Object inputValue = null;
-            if(Double.parseDouble(longVal + ".0") == cur)
-                inputValue = longVal;
-            else
-                inputValue = cur;
-            return String.valueOf(inputValue);
-        } else if(xssfRow.getCellType() == xssfRow.CELL_TYPE_BLANK || xssfRow.getCellType() == xssfRow.CELL_TYPE_ERROR){
-            return "---";
-        }
-        else {
-            return String.valueOf(xssfRow.getStringCellValue());
+
+    //    public ArrayList<ArrayList<String>> xlsx_reader(String xlsx_path, int... args) throws IOException {
+//
+//        InputStream inputStream = new FileInputStream(new File(xlsx_path));
+//        XSSFWorkbook xssfWorkbook = new XSSFWorkbook((inputStream));
+//        if (xssfWorkbook == null) {
+//            System.out.println("哇！没有读取到文件，你再找找看路径对不对~");
+//            return null;
+//        }
+//
+//        ArrayList<ArrayList<String>> arrayLists = new ArrayList<>();
+//        for (int numSheet = 0; numSheet < xssfWorkbook.getNumberOfSheets(); numSheet++) {
+//            XSSFSheet xssfSheet = xssfWorkbook.getSheetAt(numSheet);
+//            if (xssfSheet == null) {
+//                continue;
+//            }
+//            for (int rowNum = 0; rowNum <= xssfSheet.getLastRowNum(); rowNum++) {
+//                XSSFRow xssfRow = xssfSheet.getRow(rowNum);
+//                if (xssfRow == null) continue;
+//                ArrayList<String> arrayList = new ArrayList<>();
+//                for (int columnNum = 0; columnNum < args.length; columnNum++) {
+//                    XSSFCell xssfCell = xssfRow.getCell(args[columnNum]);
+//                    arrayList.add(getValue(xssfCell));
+//                }
+//            arrayLists.add(arrayList);
+//            }
+//        }
+//        return arrayLists;
+//
+//    }
+//
+    private static String getValue(XSSFCell xssfCell) {
+
+        int cellType = xssfCell.getCellType();
+        switch (cellType) {
+            case CELL_TYPE_NUMERIC:
+//                System.out.println(getType(xssfCell.));
+                return String.valueOf((int) xssfCell.getNumericCellValue());
+            case CELL_TYPE_STRING:
+                return String.valueOf(xssfCell.getStringCellValue());
+            case CELL_TYPE_BOOLEAN:
+                return String.valueOf(xssfCell.getBooleanCellValue());
+            default:
+                return "";
         }
     }
 
-    //判断后缀为xls的excel文件的数据类型
-//    @SuppressWarnings("deprecation")
     private static String getValue(HSSFCell hssfCell) {
-        if(hssfCell==null){
-            return "---";
-        }
-        if (hssfCell.getCellType() == hssfCell.CELL_TYPE_BOOLEAN) {
-            return String.valueOf(hssfCell.getBooleanCellValue());
-        } else if (hssfCell.getCellType() == hssfCell.CELL_TYPE_NUMERIC) {
-            double cur=hssfCell.getNumericCellValue();
-            long longVal = Math.round(cur);
-            Object inputValue = null;
-            if(Double.parseDouble(longVal + ".0") == cur)
-                inputValue = longVal;
-            else
-                inputValue = cur;
-            return String.valueOf(inputValue);
-        } else if(hssfCell.getCellType() == hssfCell.CELL_TYPE_BLANK || hssfCell.getCellType() == hssfCell.CELL_TYPE_ERROR){
-            return "---";
-        }
-        else {
-            return String.valueOf(hssfCell.getStringCellValue());
+
+        int cellType = hssfCell.getCellType();
+        switch (cellType) {
+            case CELL_TYPE_NUMERIC:
+                return String.valueOf((int) hssfCell.getNumericCellValue());
+            case CELL_TYPE_STRING:
+                return String.valueOf(hssfCell.getStringCellValue());
+            case CELL_TYPE_BOOLEAN:
+                return String.valueOf(hssfCell.getBooleanCellValue());
+            default:
+                return " ";
         }
     }
 
-    //字符串修剪  去除所有空白符号 ， 问号 ， 中文空格
-    static private String Trim_str(String str){
-        if(str==null)
-            return null;
-        return str.replaceAll("[\\s\\?]", "").replace("　", "");
-    }
+
 }
